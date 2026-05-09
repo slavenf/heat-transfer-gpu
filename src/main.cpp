@@ -18,6 +18,7 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
+#include <cstdlib>
 #include <cxxopts.hpp>
 #include <iostream>
 #include <memory>
@@ -30,6 +31,60 @@
 #include "GpuSolverOpenGl.hpp"
 #include "Mesh.hpp"
 #include "MeshLoader.hpp"
+
+struct CommandLineOptions
+{
+    std::string solver_type;
+    int num_iterations_per_frame;
+};
+
+static CommandLineOptions parse_command_line_options(int argc, char* argv[])
+{
+    CommandLineOptions command_line_options;
+
+    cxxopts::Options options("heat-transfer", "Heat transfer simulation");
+    options.add_options()
+        ("s", "Solver type: cpu, opencl, opengl", cxxopts::value<std::string>()->default_value("cpu"), "SOLVER")
+        ("i", "Number of solver iterations per rendered frame", cxxopts::value<int>()->default_value("2000"), "COUNT")
+        ("h,help", "Print usage");
+
+    try
+    {
+        const auto result = options.parse(argc, argv);
+
+        if (result.count("help") != 0)
+        {
+            std::cout << options.help() << "\n";
+            std::exit(0);
+        }
+
+        command_line_options.solver_type = result["s"].as<std::string>();
+        command_line_options.num_iterations_per_frame = result["i"].as<int>();
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "ERROR: " << error.what() << "\n\n" << options.help() << "\n";
+        std::exit(1);
+    }
+
+    if
+    (
+        command_line_options.solver_type != "cpu" &&
+        command_line_options.solver_type != "opencl" &&
+        command_line_options.solver_type != "opengl")
+    {
+        std::cerr << "ERROR: Invalid solver type: " << command_line_options.solver_type << ". Valid solvers: cpu, opencl, opengl." << "\n";
+        std::exit(1);
+    }
+
+    if (command_line_options.num_iterations_per_frame <= 0)
+    {
+        std::cerr << "ERROR: Number of solver iterations per rendered frame must be greater than 0" << "\n";
+        std::exit(1);
+    }
+
+    return command_line_options;
+}
 
 static void center_window(sf::Window& window)
 {
@@ -44,47 +99,7 @@ static void center_window(sf::Window& window)
 
 int main(int argc, char* argv[])
 {
-    cxxopts::Options options("heat-transfer", "Heat transfer simulation");
-    options.add_options()
-        ("s", "Solver type: cpu, opencl, opengl", cxxopts::value<std::string>()->default_value("cpu"), "SOLVER")
-        ("i", "Number of solver iterations per rendered frame", cxxopts::value<int>()->default_value("2000"), "COUNT")
-        ("h,help", "Print usage");
-
-    std::string solver_type;
-    int num_iterations_per_frame;
-
-    try
-    {
-        const auto result = options.parse(argc, argv);
-
-        if (result.count("help") != 0)
-        {
-            std::cout << options.help() << '\n';
-            return 0;
-        }
-
-        solver_type = result["s"].as<std::string>();
-
-        num_iterations_per_frame = result["i"].as<int>();
-    }
-    catch (const std::exception& error)
-    {
-        std::cerr << error.what() << "\n\n" << options.help() << '\n';
-        return 1;
-    }
-
-    if (solver_type != "cpu" && solver_type != "opencl" && solver_type != "opengl")
-    {
-        throw std::runtime_error("Invalid solver type: " + solver_type + ". Valid solvers: cpu, opencl, opengl.");
-    }
-
-    if (num_iterations_per_frame <= 0)
-    {
-        throw std::runtime_error("i must be greater than 0");
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////
+    const auto options = parse_command_line_options(argc, argv);
 
     Mesh mesh = load_hardcoded_mesh1();
 
@@ -109,21 +124,21 @@ int main(int argc, char* argv[])
 
     std::unique_ptr<Solver> solver;
 
-    if (solver_type == "cpu")
+    if (options.solver_type == "cpu")
     {
         solver = std::make_unique<CpuSolver>(mesh);
     }
-    else if (solver_type == "opencl")
+    else if (options.solver_type == "opencl")
     {
         solver = std::make_unique<GpuSolverOpenCl>(mesh);
     }
-    else if (solver_type == "opengl")
+    else if (options.solver_type == "opengl")
     {
         solver = std::make_unique<GpuSolverOpenGl>(mesh, window);
     }
     else
     {
-        throw std::runtime_error("Unhandled solver type: " + solver_type);
+        throw std::runtime_error("Unhandled solver type: " + options.solver_type);
     }
 
     sf::Font font("assets/fonts/RobotoCondensed-Bold.ttf");
@@ -162,12 +177,12 @@ int main(int argc, char* argv[])
         }
 
         // Simulate
-        solver->step(num_iterations_per_frame);
+        solver->step(options.num_iterations_per_frame);
 
         // Update HUD
         {
             std::ostringstream ss;
-            ss << int(num_iterations_per_frame / dt) << " iter/s";
+            ss << int(options.num_iterations_per_frame / dt) << " iter/s";
             text.setString(ss.str());
         }
 
