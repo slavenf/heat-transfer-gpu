@@ -53,7 +53,18 @@ Another example case:
 ./build/heat-transfer cases/water.json
 ```
 
+If the rendering window is too small, use `--scale` to increase its size, for example:
+```
+./build/heat-transfer cases/water.json --scale 4
+```
+
 For more information, run:
 ```
 ./build/heat-transfer --help
 ```
+
+Controls:
+- `Esc` - close the window
+- `R` - reset the simulation
+- `H` - toggle the HUD
+- `V` - toggle the velocity field
