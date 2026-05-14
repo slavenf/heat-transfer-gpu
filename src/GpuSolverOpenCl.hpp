@@ -21,18 +21,18 @@
 #ifndef FILE_GPUSOLVEROPENCL_HPP_INCLUDED
 #define FILE_GPUSOLVEROPENCL_HPP_INCLUDED
 
-#include <cstdint>
 #include <memory>
-#include <vector>
 
-#include "Mesh.hpp"
 #include "Solver.hpp"
+
+class Mesh;
+class SolverParameters;
 
 class GpuSolverOpenCl : public Solver
 {
 public:
 
-    GpuSolverOpenCl(const Mesh& mesh);
+    GpuSolverOpenCl(const Mesh& mesh, const SolverParameters& parameters);
 
     ~GpuSolverOpenCl() override;
 
@@ -42,15 +42,13 @@ public:
 
     void draw(sf::RenderTarget& target) override;
 
+    void draw_velocity_field(sf::RenderTarget& target) override;
+
+    float average_temperature() const override;
+
+    float max_displacement() const override;
+
 private:
-
-    const Mesh& mesh_;
-
-    float diffusion_ = 0.2f;
-
-    std::vector<std::uint8_t> pixels_;
-
-    sf::Texture texture_;
 
     struct Impl;
 

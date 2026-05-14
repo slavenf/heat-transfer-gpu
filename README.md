@@ -29,22 +29,28 @@ To build the project, run the `make` command from the project's root directory:
 ```
 make
 ```
+## Usage
 
 Run the simulator:
 ```
-./build/heat-transfer
+./build/heat-transfer cases/metal-plate.json
 ```
 
 By default, the CPU solver is used.
 
 To use the GPU solver based on OpenCL, run:
 ```
-./build/heat-transfer -s opencl
+./build/heat-transfer cases/metal-plate.json -s opencl
 ```
 
 To use the GPU solver based on OpenGL, run:
 ```
-./build/heat-transfer -s opengl
+./build/heat-transfer cases/metal-plate.json -s opengl
+```
+
+Another example case:
+```
+./build/heat-transfer cases/water.json
 ```
 
 For more information, run:

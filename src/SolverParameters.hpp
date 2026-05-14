@@ -18,12 +18,18 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#ifndef FILE_MESHLOADER_HPP_INCLUDED
-#define FILE_MESHLOADER_HPP_INCLUDED
+#ifndef FILE_SOLVERPARAMETERS_HPP_INCLUDED
+#define FILE_SOLVERPARAMETERS_HPP_INCLUDED
 
-#include "Mesh.hpp"
+struct SolverParameters
+{
+    float dt = 0.0025f;
+    float buoyancy = 0.01f;
+    float thermal_diffusion = 0.01f;
+    float velocity_damping = 0.9999f;
+    float viscosity = 0.005f;
+    int pressure_iterations = 80;
+    float source_heat_transfer = 25.0f;
+};
 
-Mesh load_hardcoded_mesh1();
-Mesh load_hardcoded_mesh2();
-
-#endif // FILE_MESHLOADER_HPP_INCLUDED
+#endif // FILE_SOLVERPARAMETERS_HPP_INCLUDED

@@ -14,7 +14,8 @@ OPENCL_SRCS := $(wildcard src/*.cl)
 OPENCL_OBJS := $(OPENCL_SRCS:%=$(BUILD_DIR)/%.o)
 
 SYSTEM_INCLUDES := ./third-party/cxxopts/include \
-                   ./third-party/glad/include
+                   ./third-party/glad/include \
+                   ./third-party/nlohmann-json/include
 
 CPPFLAGS := -MMD -MP ${addprefix -isystem, $(SYSTEM_INCLUDES)}
 CXXFLAGS := -std=c++20 -O3 -Wall -Wextra -Werror -Wfatal-errors -fopenmp

@@ -35,6 +35,12 @@ public:
     virtual void step(std::size_t num_iterations) = 0;
 
     virtual void draw(sf::RenderTarget& target) = 0;
+
+    virtual void draw_velocity_field(sf::RenderTarget& target) = 0;
+
+    virtual float average_temperature() const = 0;
+
+    virtual float max_displacement() const = 0;
 };
 
 #endif // FILE_SOLVER_HPP_INCLUDED

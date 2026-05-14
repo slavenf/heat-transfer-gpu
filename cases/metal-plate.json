@@ -1,0 +1,42 @@
+{
+    "name": "Metal plate with vertical slit in middle",
+    "mesh": {
+        "width": 400,
+        "height": 200,
+        "min_temperature": 0.0,
+        "max_temperature": 100.0,
+        "default_cell": {
+            "type": "solid",
+            "initial_temperature": 0.0
+        },
+        "regions": [
+            {
+                "type": "rectangle",
+                "cell": "vacuum",
+                "x": 200,
+                "y": 50,
+                "width": 10,
+                "height": 100,
+                "initial_temperature": 0.0
+            },
+            {
+                "type": "rectangle",
+                "cell": "source",
+                "x": 100,
+                "y": 95,
+                "width": 10,
+                "height": 10,
+                "initial_temperature": 100.0
+            }
+        ]
+    },
+    "solver_parameters": {
+        "dt": 1.0,
+        "buoyancy": 0.0,
+        "thermal_diffusion": 0.2,
+        "velocity_damping": 0.0,
+        "viscosity": 0.0,
+        "pressure_iterations": 0,
+        "source_heat_transfer": 1.0
+    }
+}

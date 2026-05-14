@@ -27,19 +27,31 @@
 
 enum class CellType : std::uint8_t
 {
-    Vacuum,
-    Metal,
-    Source
+    Solid = 0,
+    Source = 1,
+    Vacuum = 2,
+    Fluid = 3
 };
 
 class Mesh
 {
 public:
 
-    Mesh(std::size_t width, std::size_t height, std::vector<CellType> type)
+    Mesh
+    (
+        std::size_t width,
+        std::size_t height,
+        std::vector<CellType> type,
+        std::vector<float> initial_temperature,
+        float min_temperature,
+        float max_temperature
+    )
         : width_(width)
         , height_(height)
         , type_(std::move(type))
+        , initial_temperature_(std::move(initial_temperature))
+        , min_temperature_(min_temperature)
+        , max_temperature_(max_temperature)
     {}
 
     std::size_t width() const noexcept
@@ -62,10 +74,19 @@ public:
         return type_[i];
     }
 
-    bool is_conductive(std::size_t i) const noexcept
+    float initial_temperature(std::size_t i) const noexcept
     {
-        const auto t = type_[i];
-        return t == CellType::Metal || t == CellType::Source;
+        return initial_temperature_[i];
+    }
+
+    float min_temperature() const noexcept
+    {
+        return min_temperature_;
+    }
+
+    float max_temperature() const noexcept
+    {
+        return max_temperature_;
     }
 
 private:
@@ -73,6 +94,9 @@ private:
     std::size_t width_;
     std::size_t height_;
     std::vector<CellType> type_;
+    std::vector<float> initial_temperature_;
+    float min_temperature_;
+    float max_temperature_;
 };
 
 #endif // FILE_MESH_HPP_INCLUDED

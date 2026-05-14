@@ -36,9 +36,10 @@ uniform float max_temp_;
 
 uniform ivec2 size_;
 
-#define CELL_TYPE_VACUUM    0u
-#define CELL_TYPE_METAL     1u
-#define CELL_TYPE_SOURCE    2u
+#define CELL_TYPE_SOLID     0u
+#define CELL_TYPE_SOURCE    1u
+#define CELL_TYPE_VACUUM    2u
+#define CELL_TYPE_FLUID     3u
 
 uint cell_type(ivec2 p)
 {
@@ -84,7 +85,8 @@ vec3 temperature_to_color(float temp)
 
 void main()
 {
-    const ivec2 p = ivec2(clamp(v_uv, vec2(0.0), vec2(0.999999)) * vec2(size_));
+    const vec2 uv = vec2(v_uv.x, 1.0 - v_uv.y);
+    const ivec2 p = ivec2(clamp(uv, vec2(0.0), vec2(0.999999)) * vec2(size_));
 
     switch (cell_type(p))
     {
@@ -100,7 +102,8 @@ void main()
             break;
         }
 
-        case CELL_TYPE_METAL:
+        case CELL_TYPE_SOLID:
+        case CELL_TYPE_FLUID:
         {
             frag_color = vec4(temperature_to_color(curr_temp(p)), 1.0);
             break;

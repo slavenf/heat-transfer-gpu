@@ -20,7 +20,9 @@
 
 #include <cstdlib>
 #include <cxxopts.hpp>
+#include <filesystem>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <SFML/Graphics.hpp>
 #include <sstream>
@@ -30,12 +32,14 @@
 #include "GpuSolverOpenCl.hpp"
 #include "GpuSolverOpenGl.hpp"
 #include "Mesh.hpp"
-#include "MeshLoader.hpp"
+#include "SimulationCaseLoader.hpp"
 
 struct CommandLineOptions
 {
+    std::filesystem::path case_path;
     std::string solver_type;
     int num_iterations_per_frame;
+    int scale;
 };
 
 static CommandLineOptions parse_command_line_options(int argc, char* argv[])
@@ -44,9 +48,13 @@ static CommandLineOptions parse_command_line_options(int argc, char* argv[])
 
     cxxopts::Options options("heat-transfer", "Heat transfer simulation");
     options.add_options()
+        ("case", "Path to simulation case JSON file", cxxopts::value<std::string>(), "PATH")
         ("s", "Solver type: cpu, opencl, opengl", cxxopts::value<std::string>()->default_value("cpu"), "SOLVER")
-        ("i", "Number of solver iterations per rendered frame", cxxopts::value<int>()->default_value("2000"), "COUNT")
+        ("i", "Number of solver iterations per rendered frame", cxxopts::value<int>()->default_value("200"), "COUNT")
+        ("scale", "Window scale factor", cxxopts::value<int>()->default_value("1"), "FACTOR")
         ("h,help", "Print usage");
+    options.parse_positional({"case"});
+    options.positional_help("CASE");
 
     try
     {
@@ -58,8 +66,16 @@ static CommandLineOptions parse_command_line_options(int argc, char* argv[])
             std::exit(0);
         }
 
+        if (result.count("case") == 0)
+        {
+            std::cerr << "ERROR: Missing simulation case path" << "\n\n" << options.help() << "\n";
+            std::exit(1);
+        }
+
+        command_line_options.case_path = result["case"].as<std::string>();
         command_line_options.solver_type = result["s"].as<std::string>();
         command_line_options.num_iterations_per_frame = result["i"].as<int>();
+        command_line_options.scale = result["scale"].as<int>();
     }
     catch (const std::exception& error)
     {
@@ -83,6 +99,12 @@ static CommandLineOptions parse_command_line_options(int argc, char* argv[])
         std::exit(1);
     }
 
+    if (command_line_options.scale <= 0)
+    {
+        std::cerr << "ERROR: Window scale factor must be greater than 0" << "\n";
+        std::exit(1);
+    }
+
     return command_line_options;
 }
 
@@ -101,7 +123,9 @@ int main(int argc, char* argv[])
 {
     const auto options = parse_command_line_options(argc, argv);
 
-    Mesh mesh = load_hardcoded_mesh1();
+    const SimulationCase simulation_case = load_simulation_case_from_json(options.case_path);
+    const Mesh& mesh = simulation_case.mesh;
+    const SolverParameters& solver_parameters = simulation_case.solver_parameters;
 
     sf::ContextSettings context_settings;
     context_settings.depthBits = 0;
@@ -113,12 +137,30 @@ int main(int argc, char* argv[])
 
     sf::RenderWindow window
     (
-        sf::VideoMode(sf::Vector2u(mesh.width(), mesh.height())),
+        sf::VideoMode
+        (
+            sf::Vector2u
+            (
+                mesh.width() * options.scale,
+                mesh.height() * options.scale
+            )
+        ),
         "Heat Transfer",
         sf::Style::Titlebar | sf::Style::Close,
         sf::State::Windowed,
         context_settings
     );
+
+    const sf::View simulation_view
+    (
+        sf::FloatRect
+        (
+            {0.0f, 0.0f},
+            {static_cast<float>(mesh.width()), static_cast<float>(mesh.height())}
+        )
+    );
+
+    window.setView(simulation_view);
 
     center_window(window);
 
@@ -126,31 +168,32 @@ int main(int argc, char* argv[])
 
     if (options.solver_type == "cpu")
     {
-        solver = std::make_unique<CpuSolver>(mesh);
+        solver = std::make_unique<CpuSolver>(mesh, solver_parameters);
     }
     else if (options.solver_type == "opencl")
     {
-        solver = std::make_unique<GpuSolverOpenCl>(mesh);
+        solver = std::make_unique<GpuSolverOpenCl>(mesh, solver_parameters);
     }
     else if (options.solver_type == "opengl")
     {
-        solver = std::make_unique<GpuSolverOpenGl>(mesh, window);
+        solver = std::make_unique<GpuSolverOpenGl>(mesh, solver_parameters, window);
     }
     else
     {
         throw std::runtime_error("Unhandled solver type: " + options.solver_type);
     }
 
-    sf::Font font("assets/fonts/RobotoCondensed-Bold.ttf");
+    sf::Font font("assets/fonts/RobotoCondensed-Regular.ttf");
 
     sf::Text text(font);
-    text.setCharacterSize(16);
-    text.setFillColor(sf::Color::Red);
-    text.setOutlineColor(sf::Color::White);
-    text.setOutlineThickness(1.0f);
+    text.setCharacterSize(14);
+    text.setFillColor(sf::Color::White);
     text.setPosition({5.0f, 0.0f});
 
     sf::Clock clock;
+
+    bool show_hud = true;
+    bool show_velocity_field = false;
 
     while (window.isOpen())
     {
@@ -173,22 +216,46 @@ int main(int argc, char* argv[])
                     solver->reset();
                     clock.restart();
                 }
+                else if (key_pressed->scancode == sf::Keyboard::Scancode::H)
+                {
+                    show_hud = !show_hud;
+                }
+                else if (key_pressed->scancode == sf::Keyboard::Scancode::V)
+                {
+                    show_velocity_field = !show_velocity_field;
+                }
             }
         }
 
-        // Simulate
         solver->step(options.num_iterations_per_frame);
 
-        // Update HUD
+        window.clear();
+
+        window.setView(simulation_view);
+
+        solver->draw(window);
+
+        if (show_velocity_field)
         {
-            std::ostringstream ss;
-            ss << int(options.num_iterations_per_frame / dt) << " iter/s";
-            text.setString(ss.str());
+            solver->draw_velocity_field(window);
         }
 
-        window.clear();
-        solver->draw(window);
-        window.draw(text);
+        window.setView(window.getDefaultView());
+
+        if (show_hud)
+        {
+            // Update HUD
+            {
+                std::ostringstream ss;
+                ss << int(options.num_iterations_per_frame / dt) << " iter/s" << "\n";
+                ss << "Avg T: " << solver->average_temperature() << "\n";
+                ss << "Max disp: " << solver->max_displacement() << "\n";
+                text.setString(ss.str());
+            }
+
+            window.draw(text);
+        }
+
         window.display();
     }
 }

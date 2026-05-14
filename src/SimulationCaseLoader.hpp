@@ -18,41 +18,13 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#ifndef FILE_GPUSOLVEROPENGL_HPP_INCLUDED
-#define FILE_GPUSOLVEROPENGL_HPP_INCLUDED
+#ifndef FILE_SIMULATIONCASELOADER_HPP_INCLUDED
+#define FILE_SIMULATIONCASELOADER_HPP_INCLUDED
 
-#include <memory>
+#include <filesystem>
 
-#include "Solver.hpp"
+#include "SimulationCase.hpp"
 
-class Mesh;
-class SolverParameters;
+SimulationCase load_simulation_case_from_json(const std::filesystem::path& path);
 
-class GpuSolverOpenGl : public Solver
-{
-public:
-
-    GpuSolverOpenGl(const Mesh& mesh, const SolverParameters& parameters, sf::RenderWindow& window);
-
-    ~GpuSolverOpenGl() override;
-
-    void reset() override;
-
-    void step(std::size_t num_iterations) override;
-
-    void draw(sf::RenderTarget& target) override;
-
-    void draw_velocity_field(sf::RenderTarget& target) override;
-
-    float average_temperature() const override;
-
-    float max_displacement() const override;
-
-private:
-
-    class Impl;
-
-    std::unique_ptr<Impl> impl_;
-};
-
-#endif // FILE_GPUSOLVEROPENGL_HPP_INCLUDED
+#endif // FILE_SIMULATIONCASELOADER_HPP_INCLUDED
