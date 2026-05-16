@@ -53,9 +53,9 @@ Another example case:
 ./build/heat-transfer cases/water.json
 ```
 
-If the rendering window is too small, use `--scale` to increase its size, for example:
+If the rendering window is too small, use `-z` to increase its size, for example:
 ```
-./build/heat-transfer cases/water.json --scale 4
+./build/heat-transfer cases/water.json -z 4
 ```
 
 For more information, run:

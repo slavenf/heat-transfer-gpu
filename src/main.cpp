@@ -51,7 +51,7 @@ static CommandLineOptions parse_command_line_options(int argc, char* argv[])
         ("case", "Path to simulation case JSON file", cxxopts::value<std::string>(), "PATH")
         ("s", "Solver type: cpu, opencl, opengl", cxxopts::value<std::string>()->default_value("cpu"), "SOLVER")
         ("i", "Number of solver iterations per rendered frame", cxxopts::value<int>()->default_value("200"), "COUNT")
-        ("scale", "Window scale factor", cxxopts::value<int>()->default_value("1"), "FACTOR")
+        ("z", "Window scale factor", cxxopts::value<int>()->default_value("1"), "FACTOR")
         ("h,help", "Print usage");
     options.parse_positional({"case"});
     options.positional_help("CASE");
@@ -75,7 +75,7 @@ static CommandLineOptions parse_command_line_options(int argc, char* argv[])
         command_line_options.case_path = result["case"].as<std::string>();
         command_line_options.solver_type = result["s"].as<std::string>();
         command_line_options.num_iterations_per_frame = result["i"].as<int>();
-        command_line_options.scale = result["scale"].as<int>();
+        command_line_options.scale = result["z"].as<int>();
     }
     catch (const std::exception& error)
     {
