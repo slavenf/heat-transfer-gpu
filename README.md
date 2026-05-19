@@ -33,29 +33,29 @@ make
 
 Run the simulator:
 ```
-./build/heat-transfer cases/metal-plate.json
+./build/heat-transfer cases/metal-plate-400x200.json
 ```
 
 By default, the CPU solver is used.
 
 To use the GPU solver based on OpenCL, run:
 ```
-./build/heat-transfer cases/metal-plate.json -s opencl
+./build/heat-transfer cases/metal-plate-400x200.json -s opencl
 ```
 
 To use the GPU solver based on OpenGL, run:
 ```
-./build/heat-transfer cases/metal-plate.json -s opengl
+./build/heat-transfer cases/metal-plate-400x200.json -s opengl
 ```
 
 Another example case:
 ```
-./build/heat-transfer cases/water.json
+./build/heat-transfer cases/water-150x150.json
 ```
 
 If the rendering window is too small, use `-z` to increase its size, for example:
 ```
-./build/heat-transfer cases/water.json -z 4
+./build/heat-transfer cases/water-150x150.json -z 4
 ```
 
 For more information, run:
