@@ -54,13 +54,13 @@ void CpuSolver::reset()
             curr_temperature_[i] = mesh_.initial_temperature(i);
             next_temperature_[i] = mesh_.initial_temperature(i);
 
-            curr_velocity_[i] = glm::vec2(0.0f, 0.0f);
-            next_velocity_[i] = glm::vec2(0.0f, 0.0f);
+            curr_velocity_[i] = Vec2(Real(0.0), Real(0.0));
+            next_velocity_[i] = Vec2(Real(0.0), Real(0.0));
 
-            curr_pressure_[i] = 0.0f;
-            next_pressure_[i] = 0.0f;
+            curr_pressure_[i] = Real(0.0);
+            next_pressure_[i] = Real(0.0);
 
-            divergence_[i] = 0.0f;
+            divergence_[i] = Real(0.0);
         }
     }
 }
@@ -162,11 +162,26 @@ void CpuSolver::draw_velocity_field(sf::RenderTarget& target)
 
             if (ti == CellType::Fluid)
             {
-                const glm::vec2 start(x + 0.5f, y + 0.5f);
-                const glm::vec2 end = start + normalize(curr_velocity_[i]);
+                const Vec2 start(x + Real(0.5), y + Real(0.5));
+                const Vec2 end = start + normalize(curr_velocity_[i]);
 
-                lines.append(sf::Vertex({start.x, start.y}, sf::Color::White));
-                lines.append(sf::Vertex({end.x,   end.y},   sf::Color::White));
+                lines.append
+                (
+                    sf::Vertex
+                    (
+                        {static_cast<float>(start.x), static_cast<float>(start.y)},
+                        sf::Color::White
+                    )
+                );
+
+                lines.append
+                (
+                    sf::Vertex
+                    (
+                        {static_cast<float>(end.x), static_cast<float>(end.y)},
+                        sf::Color::White
+                    )
+                );
             }
         }
     }
@@ -174,9 +189,9 @@ void CpuSolver::draw_velocity_field(sf::RenderTarget& target)
     target.draw(lines);
 }
 
-float CpuSolver::average_temperature() const
+Real CpuSolver::average_temperature() const
 {
-    float sum = 0.0f;
+    Real sum = Real(0.0);
     std::size_t count = 0;
 
     for (std::size_t i = 0; i < curr_temperature_.size(); ++i)
@@ -193,9 +208,9 @@ float CpuSolver::average_temperature() const
     return sum / count;
 }
 
-float CpuSolver::max_displacement() const
+Real CpuSolver::max_displacement() const
 {
-    float max_speed = 0.0f;
+    Real max_speed = Real(0.0);
 
     for (std::size_t i = 0; i < curr_velocity_.size(); ++i)
     {
@@ -203,7 +218,7 @@ float CpuSolver::max_displacement() const
 
         if (ti == CellType::Fluid)
         {
-            float speed = length(curr_velocity_[i]);
+            Real speed = length(curr_velocity_[i]);
 
             if (speed > max_speed)
             {
@@ -220,7 +235,7 @@ float CpuSolver::max_displacement() const
 
 void CpuSolver::add_buoyancy()
 {
-    const float ambient_temperature = mesh_.min_temperature();
+    const Real ambient_temperature = mesh_.min_temperature();
 
     #pragma omp for schedule(static)
     for (std::size_t y = 0; y < mesh_.height(); ++y)
@@ -343,16 +358,16 @@ void CpuSolver::advect_temperature()
                 {
                     const auto old_x = std::clamp
                     (
-                        static_cast<float>(x) - curr_velocity_[i].x * parameters_.dt,
-                        0.0f,
-                        static_cast<float>(mesh_.width() - 1)
+                        static_cast<Real>(x) - curr_velocity_[i].x * parameters_.dt,
+                        Real(0.0),
+                        static_cast<Real>(mesh_.width() - 1)
                     );
 
                     const auto old_y = std::clamp
                     (
-                        static_cast<float>(y) - curr_velocity_[i].y * parameters_.dt,
-                        0.0f,
-                        static_cast<float>(mesh_.height() - 1)
+                        static_cast<Real>(y) - curr_velocity_[i].y * parameters_.dt,
+                        Real(0.0),
+                        static_cast<Real>(mesh_.height() - 1)
                     );
 
                     next_temperature_[i] = sample_temperature(old_x, old_y, curr_temperature_[i]);
@@ -389,16 +404,16 @@ void CpuSolver::advect_velocity()
                 {
                     const auto old_x = std::clamp
                     (
-                        static_cast<float>(x) - curr_velocity_[i].x * parameters_.dt,
-                        0.0f,
-                        static_cast<float>(mesh_.width() - 1)
+                        static_cast<Real>(x) - curr_velocity_[i].x * parameters_.dt,
+                        Real(0.0),
+                        static_cast<Real>(mesh_.width() - 1)
                     );
 
                     const auto old_y = std::clamp
                     (
-                        static_cast<float>(y) - curr_velocity_[i].y * parameters_.dt,
-                        0.0f,
-                        static_cast<float>(mesh_.height() - 1)
+                        static_cast<Real>(y) - curr_velocity_[i].y * parameters_.dt,
+                        Real(0.0),
+                        static_cast<Real>(mesh_.height() - 1)
                     );
 
                     next_velocity_[i] = sample_velocity(old_x, old_y);
@@ -409,7 +424,7 @@ void CpuSolver::advect_velocity()
 
                 default:
                 {
-                    next_velocity_[i] = glm::vec2(0.0f, 0.0f);
+                    next_velocity_[i] = Vec2(Real(0.0), Real(0.0));
                     break;
                 }
             }
@@ -479,15 +494,15 @@ void CpuSolver::apply_velocity_boundaries()
                         const auto tj = mesh_.type(j);
                         if (tj != CellType::Fluid)
                         {
-                            if (curr_velocity_[i].x < 0.0f)
+                            if (curr_velocity_[i].x < Real(0.0))
                             {
-                                curr_velocity_[i].x = 0.0f;
+                                curr_velocity_[i].x = Real(0.0);
                             }
                         }
                     }
-                    else if (curr_velocity_[i].x < 0.0f)
+                    else if (curr_velocity_[i].x < Real(0.0))
                     {
-                        curr_velocity_[i].x = 0.0f;
+                        curr_velocity_[i].x = Real(0.0);
                     }
 
                     if (x + 1 < mesh_.width())
@@ -496,15 +511,15 @@ void CpuSolver::apply_velocity_boundaries()
                         const auto tj = mesh_.type(j);
                         if (tj != CellType::Fluid)
                         {
-                            if (curr_velocity_[i].x > 0.0f)
+                            if (curr_velocity_[i].x > Real(0.0))
                             {
-                                curr_velocity_[i].x = 0.0f;
+                                curr_velocity_[i].x = Real(0.0);
                             }
                         }
                     }
-                    else if (curr_velocity_[i].x > 0.0f)
+                    else if (curr_velocity_[i].x > Real(0.0))
                     {
-                        curr_velocity_[i].x = 0.0f;
+                        curr_velocity_[i].x = Real(0.0);
                     }
 
                     if (y > 0)
@@ -513,15 +528,15 @@ void CpuSolver::apply_velocity_boundaries()
                         const auto tj = mesh_.type(j);
                         if (tj != CellType::Fluid)
                         {
-                            if (curr_velocity_[i].y < 0.0f)
+                            if (curr_velocity_[i].y < Real(0.0))
                             {
-                                curr_velocity_[i].y = 0.0f;
+                                curr_velocity_[i].y = Real(0.0);
                             }
                         }
                     }
-                    else if (curr_velocity_[i].y < 0.0f)
+                    else if (curr_velocity_[i].y < Real(0.0))
                     {
-                        curr_velocity_[i].y = 0.0f;
+                        curr_velocity_[i].y = Real(0.0);
                     }
 
                     if (y + 1 < mesh_.height())
@@ -530,15 +545,15 @@ void CpuSolver::apply_velocity_boundaries()
                         const auto tj = mesh_.type(j);
                         if (tj != CellType::Fluid)
                         {
-                            if (curr_velocity_[i].y > 0.0f)
+                            if (curr_velocity_[i].y > Real(0.0))
                             {
-                                curr_velocity_[i].y = 0.0f;
+                                curr_velocity_[i].y = Real(0.0);
                             }
                         }
                     }
-                    else if (curr_velocity_[i].y > 0.0f)
+                    else if (curr_velocity_[i].y > Real(0.0))
                     {
-                        curr_velocity_[i].y = 0.0f;
+                        curr_velocity_[i].y = Real(0.0);
                     }
 
                     break;
@@ -546,7 +561,7 @@ void CpuSolver::apply_velocity_boundaries()
 
                 default:
                 {
-                    curr_velocity_[i] = glm::vec2(0.0f, 0.0f);
+                    curr_velocity_[i] = Vec2(Real(0.0), Real(0.0));
                     break;
                 }
             }
@@ -569,7 +584,7 @@ void CpuSolver::diffuse_temperature()
                 case CellType::Solid:
                 case CellType::Fluid:
                 {
-                    float sum = 0.0f;
+                    Real sum = Real(0.0);
 
                     if (x > 0)
                     {
@@ -643,7 +658,7 @@ void CpuSolver::diffuse_velocity()
             {
                 case CellType::Fluid:
                 {
-                    glm::vec2 sum(0.0f, 0.0f);
+                    Vec2 sum(Real(0.0), Real(0.0));
 
                     if (x > 0)
                     {
@@ -692,7 +707,7 @@ void CpuSolver::diffuse_velocity()
 
                 default:
                 {
-                    next_velocity_[i] = glm::vec2(0.0f, 0.0f);
+                    next_velocity_[i] = Vec2(Real(0.0), Real(0.0));
                     break;
                 }
             }
@@ -721,10 +736,10 @@ void CpuSolver::project_velocity()
             {
                 case CellType::Fluid:
                 {
-                    glm::vec2 left_velocity(0.0f, 0.0f);
-                    glm::vec2 right_velocity(0.0f, 0.0f);
-                    glm::vec2 up_velocity(0.0f, 0.0f);
-                    glm::vec2 down_velocity(0.0f, 0.0f);
+                    Vec2 left_velocity(Real(0.0), Real(0.0));
+                    Vec2 right_velocity(Real(0.0), Real(0.0));
+                    Vec2 up_velocity(Real(0.0), Real(0.0));
+                    Vec2 down_velocity(Real(0.0), Real(0.0));
 
                     if (x > 0)
                     {
@@ -767,7 +782,7 @@ void CpuSolver::project_velocity()
                     }
 
                     divergence_[i] =
-                        0.5f *
+                        Real(0.5) *
                         (
                             right_velocity.x - left_velocity.x +
                             down_velocity.y - up_velocity.y
@@ -778,7 +793,7 @@ void CpuSolver::project_velocity()
 
                 default:
                 {
-                    divergence_[i] = 0.0f;
+                    divergence_[i] = Real(0.0);
                     break;
                 }
             }
@@ -792,8 +807,8 @@ void CpuSolver::project_velocity()
     #pragma omp for schedule(static)
     for (std::size_t i = 0; i < curr_pressure_.size(); ++i)
     {
-        curr_pressure_[i] = 0.0f;
-        next_pressure_[i] = 0.0f;
+        curr_pressure_[i] = Real(0.0);
+        next_pressure_[i] = Real(0.0);
     }
 
     for (int iter = 0; iter < parameters_.pressure_iterations; ++iter)
@@ -810,10 +825,10 @@ void CpuSolver::project_velocity()
                 {
                     case CellType::Fluid:
                     {
-                        float left_pressure  = curr_pressure_[i];
-                        float right_pressure = curr_pressure_[i];
-                        float up_pressure    = curr_pressure_[i];
-                        float down_pressure  = curr_pressure_[i];
+                        Real left_pressure  = curr_pressure_[i];
+                        Real right_pressure = curr_pressure_[i];
+                        Real up_pressure    = curr_pressure_[i];
+                        Real down_pressure  = curr_pressure_[i];
 
                         if (x > 0)
                         {
@@ -856,7 +871,7 @@ void CpuSolver::project_velocity()
                         }
 
                         next_pressure_[i] =
-                            0.25f *
+                            Real(0.25) *
                             (
                                 left_pressure +
                                 right_pressure +
@@ -870,7 +885,7 @@ void CpuSolver::project_velocity()
 
                     default:
                     {
-                        next_pressure_[i] = 0.0f;
+                        next_pressure_[i] = Real(0.0);
                         break;
                     }
                 }
@@ -897,10 +912,10 @@ void CpuSolver::project_velocity()
             {
                 case CellType::Fluid:
                 {
-                    float left_pressure  = curr_pressure_[i];
-                    float right_pressure = curr_pressure_[i];
-                    float up_pressure    = curr_pressure_[i];
-                    float down_pressure  = curr_pressure_[i];
+                    Real left_pressure  = curr_pressure_[i];
+                    Real right_pressure = curr_pressure_[i];
+                    Real up_pressure    = curr_pressure_[i];
+                    Real down_pressure  = curr_pressure_[i];
 
                     if (x > 0)
                     {
@@ -942,8 +957,8 @@ void CpuSolver::project_velocity()
                         }
                     }
 
-                    curr_velocity_[i].x -= 0.5f * (right_pressure - left_pressure);
-                    curr_velocity_[i].y -= 0.5f * (down_pressure - up_pressure);
+                    curr_velocity_[i].x -= Real(0.5) * (right_pressure - left_pressure);
+                    curr_velocity_[i].y -= Real(0.5) * (down_pressure - up_pressure);
 
                     break;
                 }
@@ -958,7 +973,7 @@ void CpuSolver::project_velocity()
 }
 
 // Bilinear temperature sampling
-float CpuSolver::sample_temperature(float x, float y, float fallback_temperature) const
+Real CpuSolver::sample_temperature(Real x, Real y, Real fallback_temperature) const
 {
     const auto x0 = static_cast<std::size_t>(std::floor(x));
     const auto y0 = static_cast<std::size_t>(std::floor(y));
@@ -966,8 +981,8 @@ float CpuSolver::sample_temperature(float x, float y, float fallback_temperature
     const auto x1 = std::min(x0 + 1, mesh_.width() - 1);
     const auto y1 = std::min(y0 + 1, mesh_.height() - 1);
 
-    const float sx = x - static_cast<float>(x0);
-    const float sy = y - static_cast<float>(y0);
+    const Real sx = x - static_cast<Real>(x0);
+    const Real sy = y - static_cast<Real>(y0);
 
     auto read = [&](std::size_t i)
     {
@@ -988,7 +1003,7 @@ float CpuSolver::sample_temperature(float x, float y, float fallback_temperature
 }
 
 // Bilinear velocity sampling
-glm::vec2 CpuSolver::sample_velocity(float x, float y) const
+Vec2 CpuSolver::sample_velocity(Real x, Real y) const
 {
     const auto x0 = static_cast<std::size_t>(std::floor(x));
     const auto y0 = static_cast<std::size_t>(std::floor(y));
@@ -996,14 +1011,14 @@ glm::vec2 CpuSolver::sample_velocity(float x, float y) const
     const auto x1 = std::min(x0 + 1, mesh_.width() - 1);
     const auto y1 = std::min(y0 + 1, mesh_.height() - 1);
 
-    const float sx = x - static_cast<float>(x0);
-    const float sy = y - static_cast<float>(y0);
+    const Real sx = x - static_cast<Real>(x0);
+    const Real sy = y - static_cast<Real>(y0);
 
     auto read = [&](std::size_t i)
     {
         return mesh_.type(i) == CellType::Fluid
             ? curr_velocity_[i]
-            : glm::vec2(0.0f, 0.0f);
+            : Vec2(Real(0.0), Real(0.0));
     };
 
     const auto v00 = read(mesh_.index(x0, y0));

@@ -66,7 +66,7 @@ static void parse_rectangle_region
     const std::size_t mesh_width,
     const std::size_t mesh_height,
     std::vector<CellType>& mesh_cell_type,
-    std::vector<float>& mesh_initial_temperature
+    std::vector<Real>& mesh_initial_temperature
 )
 {
     const CellType region_cell_type = region["cell"];
@@ -82,10 +82,10 @@ static void parse_rectangle_region
         throw std::runtime_error("Rect region extends outside the mesh");
     }
 
-    const float initial_temperature = region["initial_temperature"];
+    const Real initial_temperature = region["initial_temperature"];
 
-    float temperature_noise_min = 0.0f;
-    float temperature_noise_max = 0.0f;
+    Real temperature_noise_min = Real(0.0);
+    Real temperature_noise_max = Real(0.0);
 
     if (region.contains("temperature_noise"))
     {
@@ -95,7 +95,7 @@ static void parse_rectangle_region
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> temperature_noise_dist(temperature_noise_min, temperature_noise_max);
+    std::uniform_real_distribution<Real> temperature_noise_dist(temperature_noise_min, temperature_noise_max);
 
     for (std::size_t y = y0; y < y0 + height; ++y)
     {
@@ -115,14 +115,14 @@ static Mesh parse_mesh(const nlohmann::json& data)
     const std::size_t width = data["width"];
     const std::size_t height = data["height"];
 
-    const float min_temperature = data["min_temperature"];
-    const float max_temperature = data["max_temperature"];
+    const Real min_temperature = data["min_temperature"];
+    const Real max_temperature = data["max_temperature"];
 
     const CellType default_cell_type = data["default_cell"]["type"];
-    const float default_initial_temperature = data["default_cell"]["initial_temperature"];
+    const Real default_initial_temperature = data["default_cell"]["initial_temperature"];
 
     std::vector<CellType> cell_type(width * height, default_cell_type);
-    std::vector<float> initial_temperature(width * height, default_initial_temperature);
+    std::vector<Real> initial_temperature(width * height, default_initial_temperature);
 
     for (const auto& region : data["regions"])
     {

@@ -23,6 +23,7 @@
 
 #include <memory>
 
+#include "Real.hpp"
 #include "Solver.hpp"
 
 class Mesh;
@@ -44,9 +45,9 @@ public:
 
     void draw_velocity_field(sf::RenderTarget& target) override;
 
-    float average_temperature() const override;
+    Real average_temperature() const override;
 
-    float max_displacement() const override;
+    Real max_displacement() const override;
 
 private:
 

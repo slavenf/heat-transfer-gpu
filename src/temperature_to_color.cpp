@@ -23,11 +23,11 @@
 #include <algorithm>
 #include <array>
 
-sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
+sf::Color temperature_to_color(Real temp, Real min_temp, Real max_temp)
 {
     #if 0 // blue -> red gradient
 
-    const float u = std::clamp((temp - min_temp) / (max_temp - min_temp), 0.0f, 1.0f);
+    const Real u = std::clamp((temp - min_temp) / (max_temp - min_temp), Real(0.0), Real(1.0));
 
     std::uint8_t r = static_cast<std::uint8_t>(255.f * u);
     std::uint8_t b = static_cast<std::uint8_t>(255.f * (1.f - u));
@@ -40,12 +40,12 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
 
     #if 0 // blue -> cyan -> yellow -> red gradient
 
-    const float u = std::clamp((temp - min_temp) / (max_temp - min_temp), 0.0f, 1.0f);
+    const Real u = std::clamp((temp - min_temp) / (max_temp - min_temp), Real(0.0), Real(1.0));
 
     // blue -> cyan
-    if (u < 0.33f)
+    if (u < Real(0.33))
     {
-        const float t = u / 0.33f;
+        const Real t = u / Real(0.33);
         return sf::Color
         (
             static_cast<std::uint8_t>(0.f),
@@ -55,9 +55,9 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
     }
 
     // cyan -> yellow
-    if (u < 0.66f)
+    if (u < Real(0.66))
     {
-        const float t = (u - 0.33f) / 0.33f;
+        const Real t = (u - Real(0.33)) / Real(0.33);
         return sf::Color
         (
             static_cast<std::uint8_t>(255.f * t),
@@ -67,7 +67,7 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
     }
 
     // yellow -> red
-    const float t = (u - 0.66f) / 0.34f;
+    const Real t = (u - Real(0.66)) / Real(0.34);
     return sf::Color
     (
         static_cast<std::uint8_t>(255.f),
@@ -81,17 +81,17 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
 
     #if 1 // blue -> cyan -> green -> yellow -> red gradient
 
-    const float u = std::clamp((temp - min_temp) / (max_temp - min_temp), 0.0f, 1.0f);
+    const Real u = std::clamp((temp - min_temp) / (max_temp - min_temp), Real(0.0), Real(1.0));
 
-    auto lerp = [](std::uint8_t a, std::uint8_t b, float t) -> std::uint8_t
+    auto lerp = [](std::uint8_t a, std::uint8_t b, Real t) -> std::uint8_t
     {
         return static_cast<std::uint8_t>(a + (b - a) * t);
     };
 
     // blue -> cyan
-    if (u < 0.25f)
+    if (u < Real(0.25))
     {
-        const float t = u / 0.25f;
+        const Real t = u / Real(0.25);
         return sf::Color
         (
             0,
@@ -101,9 +101,9 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
     }
 
     // cyan -> green
-    if (u < 0.50f)
+    if (u < Real(0.50))
     {
-        const float t = (u - 0.25f) / 0.25f;
+        const Real t = (u - Real(0.25)) / Real(0.25);
         return sf::Color
         (
             0,
@@ -113,9 +113,9 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
     }
 
     // green -> yellow
-    if (u < 0.75f)
+    if (u < Real(0.75))
     {
-        const float t = (u - 0.50f) / 0.25f;
+        const Real t = (u - Real(0.50)) / Real(0.25);
         return sf::Color
         (
             lerp(0, 255, t),
@@ -125,7 +125,7 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
     }
 
     // yellow -> red
-    const float t = (u - 0.75f) / 0.25f;
+    const Real t = (u - Real(0.75)) / Real(0.25);
     return sf::Color
     (
         255,
@@ -139,14 +139,14 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
 
     #if 0 // blue -> cyan -> green -> yellow -> orange -> red -> white
 
-    const float u = std::clamp((temp - min_temp) / (max_temp - min_temp), 0.0f, 1.0f);
+    const Real u = std::clamp((temp - min_temp) / (max_temp - min_temp), Real(0.0), Real(1.0));
 
-    auto lerp = [](std::uint8_t a, std::uint8_t b, float t) -> std::uint8_t
+    auto lerp = [](std::uint8_t a, std::uint8_t b, Real t) -> std::uint8_t
     {
         return static_cast<std::uint8_t>(a + (b - a) * t);
     };
 
-    auto mix = [&](sf::Color c0, sf::Color c1, float t) -> sf::Color
+    auto mix = [&](sf::Color c0, sf::Color c1, Real t) -> sf::Color
     {
         return sf::Color
         (
@@ -166,37 +166,37 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
 
     // 6 equal segments across [0,1]
 
-    if (u < 1.0f / 6.0f)
+    if (u < Real(1.0) / Real(6.0))
     {
-        float t = u * 6.0f;
+        Real t = u * Real(6.0);
         return mix(blue, cyan, t);
     }
 
-    if (u < 2.0f / 6.0f)
+    if (u < Real(2.0) / Real(6.0))
     {
-        float t = (u - 1.0f / 6.0f) * 6.0f;
+        Real t = (u - Real(1.0) / Real(6.0)) * Real(6.0);
         return mix(cyan, green, t);
     }
 
-    if (u < 3.0f / 6.0f)
+    if (u < Real(3.0) / Real(6.0))
     {
-        float t = (u - 2.0f / 6.0f) * 6.0f;
+        Real t = (u - Real(2.0) / Real(6.0)) * Real(6.0);
         return mix(green, yellow, t);
     }
 
-    if (u < 4.0f / 6.0f)
+    if (u < Real(4.0) / Real(6.0))
     {
-        float t = (u - 3.0f / 6.0f) * 6.0f;
+        Real t = (u - Real(3.0) / Real(6.0)) * Real(6.0);
         return mix(yellow, orange, t);
     }
 
-    if (u < 5.0f / 6.0f)
+    if (u < Real(5.0) / Real(6.0))
     {
-        float t = (u - 4.0f / 6.0f) * 6.0f;
+        Real t = (u - Real(4.0) / Real(6.0)) * Real(6.0);
         return mix(orange, red, t);
     }
 
-    float t = (u - 5.0f / 6.0f) * 6.0f;
+    Real t = (u - Real(5.0) / Real(6.0)) * Real(6.0);
     return mix(red, white, t);
 
     #endif
@@ -205,13 +205,13 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
 
     #if 0 // inferno
 
-    const float u = std::clamp((temp - min_temp) / (max_temp - min_temp), 0.0f, 1.0f);
+    const Real u = std::clamp((temp - min_temp) / (max_temp - min_temp), Real(0.0), Real(1.0));
 
     struct RGB
     {
-        float r;
-        float g;
-        float b;
+        Real r;
+        Real g;
+        Real b;
     };
 
     // Compact Inferno-style control points.
@@ -228,25 +228,25 @@ sf::Color temperature_to_color(float temp, float min_temp, float max_temp)
         {0.988f, 0.998f, 0.645f}  // pale yellow
     }};
 
-    const float scaled = u * static_cast<float>(colors.size() - 1);
+    const Real scaled = u * static_cast<Real>(colors.size() - 1);
     const std::size_t i0 = static_cast<std::size_t>(scaled);
     const std::size_t i1 = std::min(i0 + 1, colors.size() - 1);
-    const float t = scaled - static_cast<float>(i0);
+    const Real t = scaled - static_cast<Real>(i0);
 
-    const auto lerp = [](float a, float b, float x) -> float
+    const auto lerp = [](Real a, Real b, Real x) -> Real
     {
         return a + (b - a) * x;
     };
 
-    const float r = lerp(colors[i0].r, colors[i1].r, t);
-    const float g = lerp(colors[i0].g, colors[i1].g, t);
-    const float b = lerp(colors[i0].b, colors[i1].b, t);
+    const Real r = lerp(colors[i0].r, colors[i1].r, t);
+    const Real g = lerp(colors[i0].g, colors[i1].g, t);
+    const Real b = lerp(colors[i0].b, colors[i1].b, t);
 
     return sf::Color
     (
-        static_cast<std::uint8_t>(255.0f * std::clamp(r, 0.0f, 1.0f)),
-        static_cast<std::uint8_t>(255.0f * std::clamp(g, 0.0f, 1.0f)),
-        static_cast<std::uint8_t>(255.0f * std::clamp(b, 0.0f, 1.0f))
+        static_cast<std::uint8_t>(Real(255.0) * std::clamp(r, Real(0.0), Real(1.0))),
+        static_cast<std::uint8_t>(Real(255.0) * std::clamp(g, Real(0.0), Real(1.0))),
+        static_cast<std::uint8_t>(Real(255.0) * std::clamp(b, Real(0.0), Real(1.0)))
     );
 
     #endif

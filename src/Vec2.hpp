@@ -18,20 +18,13 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#ifndef FILE_SOLVERPARAMETERS_HPP_INCLUDED
-#define FILE_SOLVERPARAMETERS_HPP_INCLUDED
+#ifndef FILE_VEC2_HPP_INCLUDED
+#define FILE_VEC2_HPP_INCLUDED
+
+#include <glm/vec2.hpp>
 
 #include "Real.hpp"
 
-struct SolverParameters
-{
-    Real dt = Real(0.0025);
-    Real buoyancy = Real(0.01);
-    Real thermal_diffusion = Real(0.01);
-    Real velocity_damping = Real(0.9999);
-    Real viscosity = Real(0.005);
-    int pressure_iterations = 80;
-    Real source_heat_transfer = Real(25.0);
-};
+using Vec2 = glm::vec<2, Real, glm::defaultp>;
 
-#endif // FILE_SOLVERPARAMETERS_HPP_INCLUDED
+#endif // FILE_VEC2_HPP_INCLUDED

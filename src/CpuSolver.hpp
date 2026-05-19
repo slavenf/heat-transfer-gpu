@@ -22,12 +22,13 @@
 #define FILE_CPUSOLVER_HPP_INCLUDED
 
 #include <cstdint>
-#include <glm/vec2.hpp>
 #include <vector>
 
 #include "Mesh.hpp"
+#include "Real.hpp"
 #include "Solver.hpp"
 #include "SolverParameters.hpp"
+#include "Vec2.hpp"
 
 class CpuSolver : public Solver
 {
@@ -43,9 +44,9 @@ public:
 
     void draw_velocity_field(sf::RenderTarget& target) override;
 
-    float average_temperature() const override;
+    Real average_temperature() const override;
 
-    float max_displacement() const override;
+    Real max_displacement() const override;
 
 private:
 
@@ -67,25 +68,25 @@ private:
 
     void project_velocity();
 
-    float sample_temperature(float x, float y, float fallback_temperature) const;
+    Real sample_temperature(Real x, Real y, Real fallback_temperature) const;
 
-    glm::vec2 sample_velocity(float x, float y) const;
+    Vec2 sample_velocity(Real x, Real y) const;
 
 private:
 
     const Mesh& mesh_;
     const SolverParameters& parameters_;
 
-    std::vector<float> curr_temperature_;
-    std::vector<float> next_temperature_;
+    std::vector<Real> curr_temperature_;
+    std::vector<Real> next_temperature_;
 
-    std::vector<glm::vec2> curr_velocity_;
-    std::vector<glm::vec2> next_velocity_;
+    std::vector<Vec2> curr_velocity_;
+    std::vector<Vec2> next_velocity_;
 
-    std::vector<float> curr_pressure_;
-    std::vector<float> next_pressure_;
+    std::vector<Real> curr_pressure_;
+    std::vector<Real> next_pressure_;
 
-    std::vector<float> divergence_;
+    std::vector<Real> divergence_;
 
     std::vector<std::uint8_t> pixels_;
 

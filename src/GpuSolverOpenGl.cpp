@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "Mesh.hpp"
+#include "Real.hpp"
 #include "SolverParameters.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,9 +285,9 @@ public:
 
     void draw_velocity_field(sf::RenderTarget& target);
 
-    float average_temperature() const;
+    Real average_temperature() const;
 
-    float max_displacement() const;
+    Real max_displacement() const;
 
 private:
 
@@ -646,7 +647,7 @@ void GpuSolverOpenGl::Impl::draw_velocity_field(sf::RenderTarget& target)
     target.draw(lines);
 }
 
-float GpuSolverOpenGl::Impl::average_temperature() const
+Real GpuSolverOpenGl::Impl::average_temperature() const
 {
     const std::size_t cell_count = mesh_.width() * mesh_.height();
     std::vector<float> temperature(cell_count);
@@ -669,10 +670,10 @@ float GpuSolverOpenGl::Impl::average_temperature() const
         }
     }
 
-    return sum / count;
+    return static_cast<Real>(sum / count);
 }
 
-float GpuSolverOpenGl::Impl::max_displacement() const
+Real GpuSolverOpenGl::Impl::max_displacement() const
 {
     const std::size_t cell_count = mesh_.width() * mesh_.height();
     std::vector<std::array<float, 2>> velocity(cell_count);
@@ -700,7 +701,7 @@ float GpuSolverOpenGl::Impl::max_displacement() const
         }
     }
 
-    return max_speed * parameters_.dt;
+    return static_cast<Real>(max_speed) * parameters_.dt;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -828,8 +829,17 @@ void GpuSolverOpenGl::Impl::render_to_texture(sf::RenderTarget& target)
 ///////////////////////////////////////////////////////////////////////////////
 
 GpuSolverOpenGl::GpuSolverOpenGl(const Mesh& mesh, const SolverParameters& parameters, sf::RenderWindow& window)
-    : impl_(std::make_unique<Impl>(mesh, parameters, window))
-{}
+{
+    #ifdef USE_DOUBLE
+    (void)mesh;
+    (void)parameters;
+    (void)window;
+
+    throw std::runtime_error("The OpenGL solver uses 32-bit float textures and does not support USE_DOUBLE.");
+    #else
+    impl_ = std::make_unique<Impl>(mesh, parameters, window);
+    #endif
+}
 
 GpuSolverOpenGl::~GpuSolverOpenGl() = default;
 
@@ -853,12 +863,12 @@ void GpuSolverOpenGl::draw_velocity_field(sf::RenderTarget& target)
     impl_->draw_velocity_field(target);
 }
 
-float GpuSolverOpenGl::average_temperature() const
+Real GpuSolverOpenGl::average_temperature() const
 {
     return impl_->average_temperature();
 }
 
-float GpuSolverOpenGl::max_displacement() const
+Real GpuSolverOpenGl::max_displacement() const
 {
     return impl_->max_displacement();
 }

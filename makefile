@@ -2,6 +2,8 @@ BUILD_DIR := ./build
 
 TARGET := heat-transfer
 
+USE_DOUBLE ?= 0
+
 SRCS := $(wildcard src/*.cpp) \
         ./third-party/glad/src/glad.c
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
@@ -21,6 +23,10 @@ CPPFLAGS := -MMD -MP ${addprefix -isystem, $(SYSTEM_INCLUDES)}
 CXXFLAGS := -std=c++20 -O3 -Wall -Wextra -Werror -Wfatal-errors -fopenmp
 LDFLAGS  := -fopenmp
 LDLIBS   := -lsfml-graphics -lsfml-window -lsfml-system -lOpenCL
+
+ifneq ($(USE_DOUBLE),0)
+CPPFLAGS += -DUSE_DOUBLE
+endif
 
 # Build target
 $(BUILD_DIR)/$(TARGET): $(OBJS) $(GLSL_OBJS) $(OPENCL_OBJS)

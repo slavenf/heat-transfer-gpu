@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "Mesh.hpp"
+#include "Real.hpp"
 #include "SolverParameters.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,6 +133,23 @@ static cl_device_id choose_device()
     throw std::runtime_error("No OpenCL devices found");
 }
 
+#ifdef USE_DOUBLE
+static bool device_supports_double(cl_device_id device)
+{
+    cl_device_fp_config config = 0;
+    const cl_int error = clGetDeviceInfo
+    (
+        device,
+        CL_DEVICE_DOUBLE_FP_CONFIG,
+        sizeof(config),
+        &config,
+        nullptr
+    );
+
+    return error == CL_SUCCESS && config != 0;
+}
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 // OpenCL context functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,11 +198,28 @@ static void release_command_queue(cl_command_queue& queue)
 
 static cl_program create_and_build_program(cl_device_id device, cl_context context, const char* source, std::size_t source_length)
 {
+    #ifdef USE_DOUBLE
+    if (!device_supports_double(device))
+    {
+        throw std::runtime_error
+        (
+            "OpenCL double precision was requested with USE_DOUBLE, "
+            "but the selected OpenCL device does not report cl_khr_fp64/CL_DEVICE_DOUBLE_FP_CONFIG support."
+        );
+    }
+    #endif
+
     cl_int error = CL_SUCCESS;
     cl_program program = clCreateProgramWithSource(context, 1, &source, &source_length, &error);
     check_cl(error, "clCreateProgramWithSource");
 
-    error = clBuildProgram(program, 1, &device, "", nullptr, nullptr);
+    #ifdef USE_DOUBLE
+    const char* options = "-DUSE_DOUBLE";
+    #else
+    const char* options = "";
+    #endif
+
+    error = clBuildProgram(program, 1, &device, options, nullptr, nullptr);
     if (error == CL_SUCCESS)
     {
         return program;
@@ -309,9 +344,9 @@ public:
 
     void draw_velocity_field(sf::RenderTarget& target);
 
-    float average_temperature() const;
+    Real average_temperature() const;
 
-    float max_displacement() const;
+    Real max_displacement() const;
 
 private:
 
@@ -413,13 +448,13 @@ GpuSolverOpenCl::Impl::Impl(const Mesh& mesh, const SolverParameters& parameters
     const std::size_t cell_count = mesh_.width() * mesh_.height();
 
     type_ = create_buffer(context_, CL_MEM_READ_ONLY, cell_count * sizeof(std::uint8_t));
-    curr_temperature_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(float));
-    next_temperature_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(float));
-    curr_velocity_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(float) * 2);
-    next_velocity_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(float) * 2);
-    curr_pressure_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(float));
-    next_pressure_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(float));
-    divergence_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(float));
+    curr_temperature_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(Real));
+    next_temperature_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(Real));
+    curr_velocity_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(Real) * 2);
+    next_velocity_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(Real) * 2);
+    curr_pressure_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(Real));
+    next_pressure_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(Real));
+    divergence_ = create_buffer(context_, CL_MEM_READ_WRITE, cell_count * sizeof(Real));
     pixels_buffer_ = create_buffer(context_, CL_MEM_WRITE_ONLY, cell_count * sizeof(std::uint8_t) * 4);
 
     reset();
@@ -459,7 +494,7 @@ void GpuSolverOpenCl::Impl::reset()
     const std::size_t cell_count = mesh_.width() * mesh_.height();
 
     std::vector<std::uint8_t> cell_type(cell_count);
-    std::vector<float> initial_temperature(cell_count);
+    std::vector<Real> initial_temperature(cell_count);
 
     for (std::size_t i = 0; i < cell_count; ++i)
     {
@@ -467,8 +502,8 @@ void GpuSolverOpenCl::Impl::reset()
         initial_temperature[i] = mesh_.initial_temperature(i);
     }
 
-    const std::array<float, 2> zero_vector = {0.0f, 0.0f};
-    const float zero_scalar = 0.0f;
+    const std::array<Real, 2> zero_vector = {Real(0.0), Real(0.0)};
+    const Real zero_scalar = Real(0.0);
 
     check_cl
     (
@@ -495,7 +530,7 @@ void GpuSolverOpenCl::Impl::reset()
             curr_temperature_,
             CL_TRUE,
             0,
-            cell_count * sizeof(float),
+            cell_count * sizeof(Real),
             initial_temperature.data(),
             0,
             nullptr,
@@ -512,7 +547,7 @@ void GpuSolverOpenCl::Impl::reset()
             next_temperature_,
             CL_TRUE,
             0,
-            cell_count * sizeof(float),
+            cell_count * sizeof(Real),
             initial_temperature.data(),
             0,
             nullptr,
@@ -528,9 +563,9 @@ void GpuSolverOpenCl::Impl::reset()
             command_queue_,
             curr_velocity_,
             &zero_vector,
-            sizeof(float) * 2,
+            sizeof(Real) * 2,
             0,
-            cell_count * sizeof(float) * 2,
+            cell_count * sizeof(Real) * 2,
             0,
             nullptr,
             nullptr
@@ -545,9 +580,9 @@ void GpuSolverOpenCl::Impl::reset()
             command_queue_,
             next_velocity_,
             &zero_vector,
-            sizeof(float) * 2,
+            sizeof(Real) * 2,
             0,
-            cell_count * sizeof(float) * 2,
+            cell_count * sizeof(Real) * 2,
             0,
             nullptr,
             nullptr
@@ -562,9 +597,9 @@ void GpuSolverOpenCl::Impl::reset()
             command_queue_,
             curr_pressure_,
             &zero_scalar,
-            sizeof(float),
+            sizeof(Real),
             0,
-            cell_count * sizeof(float),
+            cell_count * sizeof(Real),
             0,
             nullptr,
             nullptr
@@ -579,9 +614,9 @@ void GpuSolverOpenCl::Impl::reset()
             command_queue_,
             next_pressure_,
             &zero_scalar,
-            sizeof(float),
+            sizeof(Real),
             0,
-            cell_count * sizeof(float),
+            cell_count * sizeof(Real),
             0,
             nullptr,
             nullptr
@@ -596,9 +631,9 @@ void GpuSolverOpenCl::Impl::reset()
             command_queue_,
             divergence_,
             &zero_scalar,
-            sizeof(float),
+            sizeof(Real),
             0,
-            cell_count * sizeof(float),
+            cell_count * sizeof(Real),
             0,
             nullptr,
             nullptr
@@ -694,7 +729,7 @@ void GpuSolverOpenCl::Impl::draw(sf::RenderTarget& target)
 void GpuSolverOpenCl::Impl::draw_velocity_field(sf::RenderTarget& target)
 {
     const std::size_t cell_count = mesh_.width() * mesh_.height();
-    std::vector<cl_float2> velocity(cell_count);
+    std::vector<std::array<Real, 2>> velocity(cell_count);
 
     check_cl
     (
@@ -704,7 +739,7 @@ void GpuSolverOpenCl::Impl::draw_velocity_field(sf::RenderTarget& target)
             curr_velocity_,
             CL_TRUE,
             0,
-            cell_count * sizeof(float) * 2,
+            cell_count * sizeof(Real) * 2,
             velocity.data(),
             0,
             nullptr,
@@ -724,14 +759,22 @@ void GpuSolverOpenCl::Impl::draw_velocity_field(sf::RenderTarget& target)
 
             if (ti == CellType::Fluid)
             {
-                const float vx = velocity[i].s[0];
-                const float vy = velocity[i].s[1];
-                const float length = std::sqrt(vx * vx + vy * vy);
+                const Real vx = velocity[i][0];
+                const Real vy = velocity[i][1];
+                const Real length = std::sqrt(vx * vx + vy * vy);
 
-                if (length > 0.0f)
+                if (length > Real(0.0))
                 {
-                    const sf::Vector2f start(static_cast<float>(x) + 0.5f, static_cast<float>(y) + 0.5f);
-                    const sf::Vector2f end(start.x + vx / length, start.y + vy / length);
+                    const sf::Vector2f start
+                    (
+                        static_cast<float>(static_cast<Real>(x) + Real(0.5)),
+                        static_cast<float>(static_cast<Real>(y) + Real(0.5))
+                    );
+                    const sf::Vector2f end
+                    (
+                        start.x + static_cast<float>(vx / length),
+                        start.y + static_cast<float>(vy / length)
+                    );
 
                     lines.append(sf::Vertex(start, sf::Color::White));
                     lines.append(sf::Vertex(end, sf::Color::White));
@@ -743,10 +786,10 @@ void GpuSolverOpenCl::Impl::draw_velocity_field(sf::RenderTarget& target)
     target.draw(lines);
 }
 
-float GpuSolverOpenCl::Impl::average_temperature() const
+Real GpuSolverOpenCl::Impl::average_temperature() const
 {
     const std::size_t cell_count = mesh_.width() * mesh_.height();
-    std::vector<float> temperature(cell_count);
+    std::vector<Real> temperature(cell_count);
 
     check_cl
     (
@@ -756,7 +799,7 @@ float GpuSolverOpenCl::Impl::average_temperature() const
             curr_temperature_,
             CL_TRUE,
             0,
-            cell_count * sizeof(float),
+            cell_count * sizeof(Real),
             temperature.data(),
             0,
             nullptr,
@@ -765,7 +808,7 @@ float GpuSolverOpenCl::Impl::average_temperature() const
         "clEnqueueReadBuffer"
     );
 
-    float sum = 0.0f;
+    Real sum = Real(0.0);
     std::size_t count = 0;
 
     for (std::size_t i = 0; i < cell_count; ++i)
@@ -782,10 +825,10 @@ float GpuSolverOpenCl::Impl::average_temperature() const
     return sum / count;
 }
 
-float GpuSolverOpenCl::Impl::max_displacement() const
+Real GpuSolverOpenCl::Impl::max_displacement() const
 {
     const std::size_t cell_count = mesh_.width() * mesh_.height();
-    std::vector<cl_float2> velocity(cell_count);
+    std::vector<std::array<Real, 2>> velocity(cell_count);
 
     check_cl
     (
@@ -795,7 +838,7 @@ float GpuSolverOpenCl::Impl::max_displacement() const
             curr_velocity_,
             CL_TRUE,
             0,
-            cell_count * sizeof(float) * 2,
+            cell_count * sizeof(Real) * 2,
             velocity.data(),
             0,
             nullptr,
@@ -804,7 +847,7 @@ float GpuSolverOpenCl::Impl::max_displacement() const
         "clEnqueueReadBuffer"
     );
 
-    float max_speed = 0.0f;
+    Real max_speed = Real(0.0);
 
     for (std::size_t i = 0; i < cell_count; ++i)
     {
@@ -812,9 +855,9 @@ float GpuSolverOpenCl::Impl::max_displacement() const
 
         if (ti == CellType::Fluid)
         {
-            const float vx = velocity[i].s[0];
-            const float vy = velocity[i].s[1];
-            const float speed = std::sqrt(vx * vx + vy * vy);
+            const Real vx = velocity[i][0];
+            const Real vy = velocity[i][1];
+            const Real speed = std::sqrt(vx * vx + vy * vy);
 
             if (speed > max_speed)
             {
@@ -1000,12 +1043,12 @@ void GpuSolverOpenCl::draw_velocity_field(sf::RenderTarget& target)
     impl_->draw_velocity_field(target);
 }
 
-float GpuSolverOpenCl::average_temperature() const
+Real GpuSolverOpenCl::average_temperature() const
 {
     return impl_->average_temperature();
 }
 
-float GpuSolverOpenCl::max_displacement() const
+Real GpuSolverOpenCl::max_displacement() const
 {
     return impl_->max_displacement();
 }

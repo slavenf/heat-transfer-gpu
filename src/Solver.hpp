@@ -24,6 +24,8 @@
 #include <cstddef>
 #include <SFML/Graphics.hpp>
 
+#include "Real.hpp"
+
 class Solver
 {
 public:
@@ -38,9 +40,9 @@ public:
 
     virtual void draw_velocity_field(sf::RenderTarget& target) = 0;
 
-    virtual float average_temperature() const = 0;
+    virtual Real average_temperature() const = 0;
 
-    virtual float max_displacement() const = 0;
+    virtual Real max_displacement() const = 0;
 };
 
 #endif // FILE_SOLVER_HPP_INCLUDED

@@ -23,6 +23,8 @@
 
 #include <SFML/Graphics/Color.hpp>
 
-sf::Color temperature_to_color(float temp, float min_temp, float max_temp);
+#include "Real.hpp"
+
+sf::Color temperature_to_color(Real temp, Real min_temp, Real max_temp);
 
 #endif // FILE_TEMPERATURE_TO_COLOR_HPP_INCLUDED

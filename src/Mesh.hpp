@@ -25,6 +25,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "Real.hpp"
+
 enum class CellType : std::uint8_t
 {
     Solid = 0,
@@ -42,9 +44,9 @@ public:
         std::size_t width,
         std::size_t height,
         std::vector<CellType> type,
-        std::vector<float> initial_temperature,
-        float min_temperature,
-        float max_temperature
+        std::vector<Real> initial_temperature,
+        Real min_temperature,
+        Real max_temperature
     )
         : width_(width)
         , height_(height)
@@ -74,17 +76,17 @@ public:
         return type_[i];
     }
 
-    float initial_temperature(std::size_t i) const noexcept
+    Real initial_temperature(std::size_t i) const noexcept
     {
         return initial_temperature_[i];
     }
 
-    float min_temperature() const noexcept
+    Real min_temperature() const noexcept
     {
         return min_temperature_;
     }
 
-    float max_temperature() const noexcept
+    Real max_temperature() const noexcept
     {
         return max_temperature_;
     }
@@ -94,9 +96,9 @@ private:
     std::size_t width_;
     std::size_t height_;
     std::vector<CellType> type_;
-    std::vector<float> initial_temperature_;
-    float min_temperature_;
-    float max_temperature_;
+    std::vector<Real> initial_temperature_;
+    Real min_temperature_;
+    Real max_temperature_;
 };
 
 #endif // FILE_MESH_HPP_INCLUDED
