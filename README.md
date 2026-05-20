@@ -1,14 +1,16 @@
-# GPU-Accelerated Heat Conduction Simulator
+# GPU-Accelerated Heat Transfer Simulator
 
-This is a 2D heat conduction simulator implemented in C++ using GPU acceleration. It supports NVIDIA, AMD, and Intel GPUs.
+This is a 2D heat transfer simulator implemented in C++ using GPU acceleration. It simulates heat conduction in fluids and solids, and heat convection in fluids. It supports NVIDIA, AMD, and Intel GPUs.
 
 The project provides a CPU solver and two GPU-based solvers:
-- **OpenCL** solver for general-purpose GPU computation
+- **OpenCL** solver
 - **OpenGL** solver based on compute shaders
 
-The simulation models heat diffusion on a rectangular grid using a finite-difference method, where each cell represents a discrete temperature value.
+The simulation models heat transfer on a rectangular grid using a finite-difference method.
 
 ![](doc/heat-transfer.gif)
+
+![](doc/water.gif)
 
 ## Build Instructions
 
@@ -29,6 +31,7 @@ To build the project, run the `make` command from the project's root directory:
 ```
 make
 ```
+
 ## Usage
 
 Run the simulator:
@@ -68,3 +71,13 @@ Controls:
 - `R` - reset the simulation
 - `H` - toggle the HUD
 - `V` - toggle the velocity field
+
+## Double Precision
+
+By default, the simulator is built with single-precision `float` values. To build with double-precision `double` values, set `USE_DOUBLE=1`:
+```
+make clean
+make USE_DOUBLE=1
+```
+
+Double precision is supported by the CPU and OpenCL solvers. The OpenCL device must support `cl_khr_fp64`. The OpenGL solver does not support double-precision.
